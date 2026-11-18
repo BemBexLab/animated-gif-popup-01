@@ -1,0 +1,95 @@
+﻿<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f5f7fa" />
+    <title>Wurizip · Opustown</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="./popup.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js" defer></script>
+  </head>
+  <body class="min-h-dvh bg-[#f5f7fa] font-['Manrope',sans-serif] text-[#3d464d] antialiased" x-data="wurizipPopup">
+
+    <!-- Non-modal assistant: stays anchored to the viewport without blocking the page. -->
+    <template x-if="ready">
+      <aside class="fixed inset-x-3 bottom-3 z-50 sm:inset-x-auto sm:bottom-6 sm:right-6 sm:w-[460px] lg:bottom-8 lg:right-8" aria-label="Wurizip project assistant" @keydown.escape="closePopup()">
+        <section x-show="isOpen" x-transition:enter="transition ease-out duration-300 motion-reduce:transition-none" x-transition:enter-start="translate-y-4 opacity-0" x-transition:enter-end="translate-y-0 opacity-100" x-transition:leave="transition ease-in duration-150 motion-reduce:transition-none" x-transition:leave-end="translate-y-3 opacity-0" class="max-h-[calc(100dvh-24px)] overflow-y-auto rounded-[24px] border border-slate-200 bg-white shadow-[0_20px_70px_-15px_rgba(35,65,90,0.25)] sm:max-h-[calc(100dvh-48px)]" role="region" aria-labelledby="assistant-title">
+          <!-- Identity and close control. -->
+          <header class="flex items-center justify-between border-b border-slate-100 px-5 py-4 sm:px-6">
+            <div class="flex items-center gap-3">
+              <span class="flex size-10 items-center justify-center rounded-xl bg-[#ffda35]" aria-hidden="true">
+                <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v3M10 3h4" stroke-linecap="round"/><rect x="4" y="6" width="16" height="14" rx="5"/><path d="M1 11v5m22-5v5M9 16h6" stroke-linecap="round"/><circle cx="8.5" cy="11" r="1" fill="currentColor" stroke="none"/><circle cx="15.5" cy="11" r="1" fill="currentColor" stroke="none"/></svg>
+              </span>
+              <div><h2 id="assistant-title" class="text-base font-extrabold">Wurizip</h2><p class="mt-0.5 flex items-center gap-1.5 text-[11px] font-medium text-slate-500"><span class="size-1.5 rounded-full bg-emerald-500" aria-hidden="true"></span>Your Opustown companion</p></div>
+            </div>
+            <button type="button" @click="closePopup()" class="flex size-9 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-2 focus-visible:outline-sky-600" aria-label="Minimize Wurizip">
+              <svg class="size-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m5 5 10 10M15 5 5 15" stroke-linecap="round"/></svg>
+            </button>
+          </header>
+          
+          <div class="px-4 pb-5 pt-5 sm:px-6">
+            <!-- Progress and live conversation. -->
+            <div class="mb-5 flex items-center gap-3" aria-label="Conversation progress">
+              <span class="shrink-0 text-[10px] font-extrabold uppercase tracking-[0.15em] text-slate-400" x-text="declined ? 'Until next time' : 'Step ' + step + ' of 3'"></span>
+              <div class="flex flex-1 gap-1.5" aria-hidden="true"><template x-for="number in 3" :key="number"><span class="h-1 flex-1 rounded-full transition-colors" :class="number <= step ? 'bg-[#ffda35]' : 'bg-slate-100'"></span></template></div>
+            </div>
+            <div class="flex items-center gap-2 sm:gap-3">
+              <!-- Both supplied clips remain local, muted and inline. Only the visible clip plays. -->
+              <div class="relative h-[184px] w-[106px] shrink-0 overflow-hidden sm:w-[128px]" aria-hidden="true">
+                <video x-ref="wave" x-show="step === 1 && !declined" class="absolute inset-0 h-full w-full object-contain" muted playsinline loop preload="auto" tabindex="-1"><source src="./assets/Waveing hand (online-video-cutter.com) (1).mp4" type="video/mp4" /></video>
+                <video x-ref="blink" x-show="step !== 1 || declined" class="absolute inset-0 h-full w-full object-contain" muted playsinline loop preload="auto" tabindex="-1"><source src="./assets/Blinking eyes (online-video-cutter.com) (1).mp4" type="video/mp4" /></video>
+              </div>
+              <div class="relative min-w-0 flex-1 rounded-2xl rounded-tl-sm bg-[#e9f7ff] p-4 sm:p-5" aria-live="polite" aria-atomic="true">
+                <span class="absolute -left-2 top-6 size-4 rotate-45 bg-[#e9f7ff]" aria-hidden="true"></span>
+                <p class="relative mb-2 text-[10px] font-extrabold uppercase tracking-[0.16em] text-sky-700" x-text="message.eyebrow"></p>
+                <h3 x-ref="stepTitle" tabindex="-1" class="relative text-lg font-extrabold leading-6 tracking-tight outline-none" x-text="message.title"></h3>
+                <p class="relative mt-2 text-xs leading-[1.7] text-slate-600" x-text="message.description"></p>
+              </div>
+            </div>
+
+            <!-- Choosing an option immediately advances the conversation. -->
+            <div class="mt-5 space-y-2" x-show="step === 1 && !declined">
+              <button type="button" @click="advance()" class="flex min-h-12 w-full items-center justify-between rounded-xl bg-[#ffda35] px-4 py-3 text-sm font-bold transition hover:bg-[#ffce16] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600"><span>Yes, show me around</span><span aria-hidden="true">→</span></button>
+              <button type="button" @click="decline()" class="min-h-10 w-full rounded-xl text-xs font-semibold text-slate-500 transition hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-sky-600">No thanks, just exploring</button>
+            </div>
+            <div class="mt-5 space-y-2" x-show="step === 2 && !declined">
+              <template x-for="option in options" :key="option.id">
+                <button type="button" @click="choose(option.id)" class="group flex min-h-12 w-full items-center gap-3 rounded-xl border border-slate-200 px-4 py-3 text-left transition hover:border-sky-300 hover:bg-sky-50 focus-visible:outline-2 focus-visible:outline-sky-600">
+                  <span class="flex size-6 shrink-0 items-center justify-center rounded-md bg-slate-100 text-xs font-bold text-slate-500 group-hover:bg-sky-100" x-text="option.symbol" aria-hidden="true"></span>
+                  <span class="flex-1 text-xs font-bold" x-text="option.label"></span><span class="text-slate-400" aria-hidden="true">→</span>
+                </button>
+              </template>
+            </div>
+            <div class="mt-5" x-show="step === 3 && !declined">
+              <ul class="space-y-3"><template x-for="item in selected.tips" :key="item"><li class="flex gap-2.5 text-xs leading-5 text-slate-600"><span class="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-[10px] font-bold text-emerald-600" aria-hidden="true">✓</span><span x-text="item"></span></li></template></ul>
+              <button type="button" @click="closePopup()" class="mt-5 min-h-12 w-full rounded-xl bg-[#ffda35] px-4 text-sm font-bold transition hover:bg-[#ffce16] focus-visible:outline-2 focus-visible:outline-sky-600">Got it, thank you <span class="ml-2" aria-hidden="true">✓</span></button>
+            </div>
+            <div class="mt-5" x-show="declined"><button type="button" @click="closePopup()" class="min-h-12 w-full rounded-xl bg-[#ffda35] text-sm font-bold hover:bg-[#ffce16] focus-visible:outline-2 focus-visible:outline-sky-600">Keep exploring <span class="ml-2" aria-hidden="true">↗</span></button></div>
+
+            <footer class="mt-4 flex min-h-6 items-center justify-between border-t border-slate-100 pt-4 text-[10px] text-slate-400">
+              <button type="button" x-show="step > 1 || declined" @click="back()" class="rounded px-1 py-1 font-semibold text-slate-500 hover:text-sky-700 focus-visible:outline-2 focus-visible:outline-sky-600">← Back</button>
+              <span x-show="step === 1 && !declined">A little guidance goes a long way.</span>
+              <span class="ml-auto pl-2">Made for curious minds.</span>
+            </footer>
+          </div>
+        </section>
+        <!-- Minimized state preserves the visitor's current step. -->
+        <div x-show="!isOpen" class="flex justify-end">
+          <button x-ref="launcher" type="button" @click="openPopup()" class="group flex min-h-14 items-center gap-3 rounded-full border border-white/70 bg-gradient-to-br from-[#48535b] to-[#303a41] py-2 pl-2 pr-2.5 text-sm font-bold text-white shadow-[0_10px_24px_-8px_rgba(35,48,58,0.45)] ring-1 ring-slate-900/5 transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_28px_-8px_rgba(35,48,58,0.5)] active:translate-y-0 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sky-600 motion-reduce:transform-none" aria-label="Open Wurizip project assistant">
+            <span class="flex size-9 items-center justify-center rounded-full bg-[#ffda35] text-[#3d464d] shadow-inner" aria-hidden="true">
+              <svg class="size-[19px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="7" width="14" height="13" rx="4"/><path d="M12 3v4M9 12h.01M15 12h.01M9 16h6M3 11v4m18-4v4"/></svg>
+            </span>
+            <span class="whitespace-nowrap">Ask Wurizip</span>
+            <span class="ml-0.5 flex size-8 items-center justify-center rounded-full bg-white/10 text-[#ffda35] transition group-hover:bg-[#ffda35] group-hover:text-[#3d464d]" aria-hidden="true">
+              <svg class="size-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 14 14 6M7 6h7v7"/></svg>
+            </span>
+          </button>
+        </div>
+      </aside>
+    </template>
+  </body>
+</html>
